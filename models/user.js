@@ -229,6 +229,7 @@ async function findOneById(userId, options = {}) {
 
 async function create(postedUserData) {
   const validUserData = validatePostSchema(postedUserData);
+  await validatePassword(validUserData.password);
   await validateUniqueUser(validUserData);
   await hashPasswordInObject(validUserData);
 
@@ -428,6 +429,23 @@ async function validateUniqueUser(userData, options) {
   });
 }
 
+/* A validação de quantidade de caracteres já está implementada em "validator" na função "validatePostSchema"  */
+async function validatePassword(password) {
+  const hasNumber = /\d/.test(password);
+  const hasLowerCase = /[a-z]/.test(password);
+
+  if (password.length < 15 && !(hasNumber && hasLowerCase)) {
+    throw new ValidationError({
+      message: `A senha deve ter pelo menos 8 caracteres, incluindo um número e uma letra minúscula, ou 15 caracteres em qualquer combinação.`,
+      stack: new Error().stack,
+      errorLocationCode: `MODEL:USER:VALIDATE_PASSWORD:WEAK_PASSWORD`,
+      key: 'password',
+    });
+  }
+
+  return true;
+}
+
 async function hashPasswordInObject(userObject) {
   userObject.password = await authentication.hashPassword(userObject.password);
   return userObject;
@@ -547,6 +565,7 @@ async function updateRewardedAt(userId, options) {
 
 export default Object.freeze({
   create,
+  validatePassword,
   findAll,
   findAllWithPagination,
   findOneByUsername,
